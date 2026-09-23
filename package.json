@@ -1,0 +1,48 @@
+{
+  "name": "ecommerce_mern",
+  "version": "1.0.0",
+  "description": "MERN ECommerce Site",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node backend/server.js",
+    "server": "nodemon backend/server.js",
+    "client": "npm start --prefix frontend",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "data:import": "node backend/seeder -import",
+    "data:destroy": "node backend/seeder -destroy",
+    "heroku-postbuild": "NPM_CONFIG_PRODUCTION=false npm install --prefix frontend && npm run build --prefix frontend"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jonathanjacka/proshop_mern.git"
+  },
+  "author": "Jonathan Jacka",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jonathanjacka/proshop_mern/issues"
+  },
+  "homepage": "https://github.com/jonathanjacka/proshop_mern#readme",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^1.27.1",
+    "colors": "^1.4.0",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "express-async-handler": "^1.2.0",
+    "express-mongo-sanitize": "^2.1.0",
+    "express-rate-limit": "^6.0.3",
+    "helmet": "^4.6.0",
+    "hpp": "^0.2.3",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^6.0.13",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.4",
+    "xss-clean": "^0.1.1"
+  },
+  "devDependencies": {
+    "concurrently": "^6.4.0",
+    "nodemon": "^2.0.15"
+  }
+}
