@@ -34,24 +34,42 @@ const addOrderItems = asyncHandler(async (req, res) => {
     res.status(201).json(createdOrder);
   }
 });
-
+// fix issues-----------------------------------
 // @desc    Get order by ID
-// @routes  GET /api/orders/:id
-// @access  Private
-const getOrderById = asyncHandler(async (req, res) => {
-  const order = await Order.findById(req.params.id).populate(
-    'user',
-    'name email'
-  );
+// @route   GET /api/orders/:id
+// @access  Private - Order Owner or Admin 
 
+const getOrderById = asyncHandler(async (req, res) => {
+
+  
+  const order = await Order.findById(req.params.id)
+    .populate('user', 'name email');
+
+  
   if (!order) {
     res.status(404);
-    throw new Error(
-      'Error not found - either the order does not exist or the order id is incorrect.'
-    );
-  } else {
-    res.json(order);
+    throw new Error('Order not found');
   }
+
+
+  const isOwner =
+    order.user?._id?.toString() ===
+    req.user._id.toString();
+
+
+  const isAdmin = req.user.isAdmin === true;
+
+
+  if (!isOwner && !isAdmin) {
+    res.status(403);
+    throw new Error(
+      'Access denied: You are not authorized to view this order'
+    );
+  }
+
+
+  res.status(200).json(order);
+
 });
 
 // @desc    Update order to paid
