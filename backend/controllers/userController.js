@@ -2,6 +2,8 @@ import asyncHandler from 'express-async-handler';
 import User from '../models/UserModel.js';
 import generateToken from '../utils/generateToken.js';
 
+import { OAuth2Client } from 'google-auth-library';
+
 // @desc    Auth user and get token
 // @routes  POST /api/users/login
 // @access  Public
@@ -21,6 +23,157 @@ const authUser = asyncHandler(async (req, res) => {
       token: generateToken(user._id),
     });
   }
+});
+
+
+// @desc    Authenticate user using Google OAuth 2.0 / OpenID Connect
+// @route   POST /api/users/google
+// @access  Public
+
+const googleAuthUser = asyncHandler(async (req, res) => {
+  const { code } = req.body;
+
+  // 1. Validate authorization code
+  if (
+    typeof code !== 'string' ||
+    code.trim().length === 0 ||
+    code.length > 4096
+  ) {
+    res.status(400);
+    throw new Error('Google authorization code is required');
+  }
+
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const redirectUri =
+    process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000';
+
+  if (!clientId || !clientSecret) {
+    res.status(500);
+    throw new Error('Google authentication is not configured');
+  }
+
+  // Create OAuth client after environment variables are loaded
+  const googleClient = new OAuth2Client(
+    clientId,
+    clientSecret,
+    redirectUri
+  );
+
+  // 2. Exchange the one-time authorization code for tokens
+  let tokens;
+
+  try {
+    const tokenResponse = await googleClient.getToken(code);
+    tokens = tokenResponse.tokens;
+  } catch (error) {
+    console.error(
+      'Google authorization-code exchange failed:',
+      error.message
+    );
+
+    res.status(401);
+    throw new Error('Invalid or expired Google authorization code');
+  }
+
+  // We only need Google's ID token for authentication.
+  if (!tokens.id_token) {
+    res.status(401);
+    throw new Error('Google did not return an ID token');
+  }
+
+  // 3. Cryptographically verify Google's ID token
+  let payload;
+
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken: tokens.id_token,
+      audience: clientId,
+    });
+
+    payload = ticket.getPayload();
+  } catch (error) {
+    console.error(
+      'Google ID token verification failed:',
+      error.message
+    );
+
+    res.status(401);
+    throw new Error('Unable to verify Google identity');
+  }
+
+  // 4. Validate important OpenID Connect claims
+  if (
+    !payload ||
+    !payload.sub ||
+    !payload.email ||
+    payload.email_verified !== true
+  ) {
+    res.status(401);
+    throw new Error('Google account identity could not be verified');
+  }
+
+  const googleSub = payload.sub;
+  const normalizedEmail = payload.email.trim().toLowerCase();
+
+  // 5. First search using Google's stable OIDC subject identifier
+  let user = await User.findOne({
+    googleSub,
+  });
+
+  // 6. If this Google account has not previously been linked,
+  // check whether a local account already uses the verified email.
+  if (!user) {
+    const existingUser = await User.findOne({
+      email: normalizedEmail,
+    });
+
+    if (existingUser) {
+      // Protect against linking two different Google identities
+      // to the same local account.
+      if (
+        existingUser.googleSub &&
+        existingUser.googleSub !== googleSub
+      ) {
+        res.status(409);
+        throw new Error(
+          'This email is already linked to another Google account'
+        );
+      }
+
+      // Google has verified ownership of this email.
+      existingUser.googleSub = googleSub;
+
+      user = await existingUser.save();
+    } else {
+      // 7. Create a new Google-only ProShop account
+      const displayName =
+        typeof payload.name === 'string' && payload.name.trim()
+          ? payload.name.trim()
+          : normalizedEmail.split('@')[0];
+
+      user = await User.create({
+        name: displayName,
+        email: normalizedEmail,
+        googleSub,
+      });
+    }
+  }
+
+  if (!user) {
+    res.status(500);
+    throw new Error('Unable to create or retrieve user account');
+  }
+
+  // 8. Google authentication is complete.
+  // From here ProShop uses its existing JWT authorization system.
+  res.status(200).json({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    isAdmin: user.isAdmin,
+    token: generateToken(user._id),
+  });
 });
 
 // @desc    Register a new user
@@ -178,6 +331,7 @@ const updateUser = asyncHandler(async (req, res) => {
 
 export {
   authUser,
+  googleAuthUser,
   getUserProfile,
   registerUser,
   updateUserProfile,
