@@ -108,9 +108,10 @@ const getAllUsers = asyncHandler(async (req, res) => {
 
   const count = await User.count();
 
-  const users = await User.find({})
-    .limit(pageSize)
-    .skip(pageSize * (page - 1));
+const users = await User.find({})
+  .select('-password')
+  .limit(pageSize)
+  .skip(pageSize * (page - 1));
 
   if (!users) {
     res.status(404);
@@ -131,7 +132,15 @@ const deleteUser = asyncHandler(async (req, res) => {
     throw new Error('User not found!');
   } else {
     await user.remove();
-    res.json({ message: 'User removed', user });
+    res.json({
+  message: 'User removed',
+  user: {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    isAdmin: user.isAdmin,
+  },
+});
   }
 });
 
