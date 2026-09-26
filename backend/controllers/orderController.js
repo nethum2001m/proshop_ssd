@@ -65,6 +65,9 @@ const updateOrderToPaid = asyncHandler(async (req, res) => {
     throw new Error(
       'Error not found - either the order does not exist or the order id is incorrect.'
     );
+  } else if (order.user.toString() !== req.user._id.toString()) {
+    res.status(403);
+    throw new Error('Not authorized to update this order.');
   } else {
     order.isPaid = true;
     order.paidAt = Date.now();
