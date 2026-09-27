@@ -119,7 +119,24 @@ export const googleLogin = (code) => async (dispatch) => {
   }
 };
 
-export const logout = () => (dispatch) => {
+export const logout = () => async (dispatch, getState) => {
+  try {
+    const {
+      userLogin: { userInfo },
+    } = getState();
+
+    if (userInfo && userInfo.token) {
+      const config = {
+        headers: {
+          Authorization: `Bearer ${userInfo.token}`,
+        },
+      };
+      await axios.post('/api/users/logout', {}, config);
+    }
+  } catch (error) {
+    console.error('Server logout error:', error);
+  }
+
   localStorage.removeItem('userInfo');
   dispatch({ type: USER_DETAILS_RESET });
   dispatch({ type: MY_ORDER_LIST_RESET });
@@ -127,6 +144,7 @@ export const logout = () => (dispatch) => {
   dispatch({ type: USER_LIST_RESET });
   toast.success('User Logout Successful!');
 };
+
 
 export const register = (name, email, password) => async (dispatch) => {
   try {

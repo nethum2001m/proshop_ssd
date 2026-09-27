@@ -5,7 +5,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import Loader from '../components/Loader';
 import FormContainer from '../components/FormContainer';
 import Meta from '../components/Meta';
-import { register } from '../actions/userActions';
+import { register, googleLogin } from '../actions/userActions';
+import { useGoogleLogin } from '@react-oauth/google';
 import { toast } from 'react-toastify';
 
 const RegisterScreen = () => {
@@ -29,6 +30,22 @@ const RegisterScreen = () => {
       navigate(`../${redirect}`);
     }
   }, [userInfo, navigate, redirect]);
+
+  const signInWithGoogle = useGoogleLogin({
+    flow: 'auth-code',
+    scope: 'openid email profile',
+    ux_mode: 'popup',
+    onSuccess: (codeResponse) => {
+      if (!codeResponse.code) {
+        toast.error('Google did not return an authorization code');
+        return;
+      }
+      dispatch(googleLogin(codeResponse.code));
+    },
+    onError: () => {
+      toast.error('Google authentication was cancelled or failed');
+    },
+  });
 
   const submitHandler = (event) => {
     event.preventDefault();
@@ -92,7 +109,49 @@ const RegisterScreen = () => {
         <Button type='submit' variant='primary'>
           Register
         </Button>
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            margin: '20px 0',
+          }}
+        >
+          <div
+            style={{
+              flex: 1,
+              height: '1px',
+              backgroundColor: '#ddd',
+            }}
+          />
+          <span
+            style={{
+              padding: '0 12px',
+              color: '#777',
+            }}
+          >
+            OR
+          </span>
+          <div
+            style={{
+              flex: 1,
+              height: '1px',
+              backgroundColor: '#ddd',
+            }}
+          />
+        </div>
+
+        <Button
+          type='button'
+          variant='outline-danger'
+          style={{ width: '100%' }}
+          disabled={loading}
+          onClick={() => signInWithGoogle()}
+        >
+          Continue with Google
+        </Button>
       </Form>
+
 
       <Row className='py-3'>
         <Col>

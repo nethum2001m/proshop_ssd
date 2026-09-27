@@ -18,6 +18,11 @@ const protect = asyncHandler(async (req, res, next) => {
 
       req.user = await User.findById(decoded.userId).select('-password');
 
+      if (!req.user || (req.user.tokenVersion || 0) !== (decoded.tokenVersion || 0)) {
+        res.status(401);
+        throw new Error('Not authorized - session expired or invalidated.');
+      }
+
       next();
     } catch (error) {
       console.error('Error:', error);
