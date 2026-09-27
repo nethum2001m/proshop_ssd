@@ -20,7 +20,10 @@ const authUser = asyncHandler(async (req, res) => {
       name: user.name,
       email: user.email,
       isAdmin: user.isAdmin,
-      token: generateToken(user._id),
+      token: generateToken(
+        user._id,
+        user.tokenVersion || 0
+      ),
     });
   }
 });
@@ -172,7 +175,10 @@ const googleAuthUser = asyncHandler(async (req, res) => {
     name: user.name,
     email: user.email,
     isAdmin: user.isAdmin,
-    token: generateToken(user._id),
+    token: generateToken(
+      user._id,
+      user.tokenVersion || 0
+    ),
   });
 });
 
@@ -203,7 +209,10 @@ const registerUser = asyncHandler(async (req, res) => {
       name: user.name,
       email: user.email,
       isAdmin: user.isAdmin,
-      token: generateToken(user._id),
+      token: generateToken(
+        user._id,
+        user.tokenVersion || 0
+      ),
     });
   }
 });
@@ -238,16 +247,29 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     throw new Error('User not found!');
   } else {
     user.name = req.body.name || user.name;
-    user.email = req.body.email || user.email;
-    req.body.password && (user.password = req.body.password);
-    const updatedUser = await user.save();
+user.name = req.body.name || user.name;
+user.email = req.body.email || user.email;
+
+// If the user changes the password,
+// revoke all previously issued JWT tokens.
+if (req.body.password) {
+  user.password = req.body.password;
+
+  user.tokenVersion =
+    (user.tokenVersion || 0) + 1;
+}
+
+const updatedUser = await user.save();
 
     res.json({
       _id: updatedUser._id,
       name: updatedUser.name,
       email: updatedUser.email,
       isAdmin: updatedUser.isAdmin,
-      token: generateToken(updatedUser._id),
+      token: generateToken(
+        updatedUser._id,
+        updatedUser.tokenVersion || 0
+      ),
     });
   }
 });
@@ -261,10 +283,10 @@ const getAllUsers = asyncHandler(async (req, res) => {
 
   const count = await User.count();
 
-const users = await User.find({})
-  .select('-password')
-  .limit(pageSize)
-  .skip(pageSize * (page - 1));
+  const users = await User.find({})
+    .select('-password')
+    .limit(pageSize)
+    .skip(pageSize * (page - 1));
 
   if (!users) {
     res.status(404);
@@ -286,14 +308,14 @@ const deleteUser = asyncHandler(async (req, res) => {
   } else {
     await user.remove();
     res.json({
-  message: 'User removed',
-  user: {
-    _id: user._id,
-    name: user.name,
-    email: user.email,
-    isAdmin: user.isAdmin,
-  },
-});
+      message: 'User removed',
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        isAdmin: user.isAdmin,
+      },
+    });
   }
 });
 
@@ -338,6 +360,33 @@ const updateUser = asyncHandler(async (req, res) => {
   }
 });
 
+// @desc    Logout user and revoke existing JWT sessions
+// @route   POST /api/users/logout
+// @access  Private
+const logoutUser = asyncHandler(async (req, res) => {
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $inc: {
+        tokenVersion: 1,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  res.status(200).json({
+    message:
+      'Logout successful. Existing sessions have been revoked.',
+  });
+});
+
 export {
   authUser,
   googleAuthUser,
@@ -348,4 +397,5 @@ export {
   deleteUser,
   getUserById,
   updateUser,
+  logoutUser,
 };
