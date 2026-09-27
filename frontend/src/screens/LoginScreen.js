@@ -122,22 +122,7 @@ const LoginScreen = () => {
 <Button
   type='button'
   variant='light'
-  style={{
-    width: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '10px',
-    backgroundColor: '#ffffff',
-    color: '#3c4043',
-    border: '1px solid #dadce0',
-    borderRadius: '24px',
-    padding: '10px 16px',
-    fontWeight: '500',
-    fontSize: '15px',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
-    transition: 'all 0.2s ease',
-  }}
+  className='google-signin-btn'
   disabled={loading}
   onClick={() => signInWithGoogle()}
 >

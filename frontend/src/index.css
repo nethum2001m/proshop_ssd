@@ -156,3 +156,25 @@ h3 {
     padding-bottom: 0;
   }
 }
+
+/* Google Sign-in Button */
+.google-signin-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background-color: #ffffff;
+  color: #3c4043;
+  border: 1px solid #dadce0;
+  border-radius: 24px;
+  padding: 10px 16px;
+  font-weight: 500;
+  font-size: 15px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+}
+
+.google-signin-btn:hover {
+  background-color: #f1f3f4;
+}
