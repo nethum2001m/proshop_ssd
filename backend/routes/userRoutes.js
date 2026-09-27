@@ -2,6 +2,7 @@ import express from 'express';
 const router = express.Router();
 import {
   authUser,
+  googleAuthUser,
   registerUser,
   getUserProfile,
   updateUserProfile,
@@ -9,11 +10,17 @@ import {
   deleteUser,
   getUserById,
   updateUser,
+  logoutUser,
 } from '../controllers/userController.js';
 import { protect, isAdmin } from '../middleware/authMiddleware.js';
 
 router.route('/').post(registerUser).get(protect, isAdmin, getAllUsers);
 router.route('/login').post(authUser);
+router.route('/google').post(googleAuthUser);
+
+router
+  .route('/logout')
+  .post(protect, logoutUser);
 router
   .route('/profile')
   .get(protect, getUserProfile)

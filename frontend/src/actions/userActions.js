@@ -73,6 +73,52 @@ export const login = (email, password) => async (dispatch) => {
   }
 };
 
+export const googleLogin = (code) => async (dispatch) => {
+  try {
+    dispatch({
+      type: USER_LOGIN_REQUEST,
+    });
+
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
+
+    const { data } = await axios.post(
+      '/api/users/google',
+      { code },
+      config
+    );
+
+    dispatch({
+      type: USER_LOGIN_SUCCESS,
+      payload: data,
+    });
+
+    localStorage.setItem(
+      'userInfo',
+      JSON.stringify(data)
+    );
+
+    toast.success('Google Sign-In Successful!');
+  } catch (error) {
+    const message =
+      error.response && error.response.data.message
+        ? error.response.data.message
+        : error.message;
+
+    dispatch({
+      type: USER_LOGIN_FAIL,
+      payload: message,
+    });
+
+    toast.error(`Google Sign-In unsuccessful: ${message}`, {
+      autoClose: 5000,
+    });
+  }
+};
+
 export const logout = () => (dispatch) => {
   localStorage.removeItem('userInfo');
   dispatch({ type: USER_DETAILS_RESET });
