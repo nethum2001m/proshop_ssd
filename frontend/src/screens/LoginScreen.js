@@ -5,10 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import Loader from '../components/Loader';
 import FormContainer from '../components/FormContainer';
 import Meta from '../components/Meta';
-import { login, googleLogin } from '../actions/userActions';
-import { useGoogleLogin } from '@react-oauth/google';
-import { toast } from 'react-toastify';
-
+import { login } from '../actions/userActions';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
@@ -29,29 +26,6 @@ const LoginScreen = () => {
       navigate(`../${redirect}`);
     }
   }, [userInfo, navigate, redirect]);
-
-
-  const signInWithGoogle = useGoogleLogin({
-  flow: 'auth-code',
-
-  // OpenID Connect identity scopes
-  scope: 'openid email profile',
-
-  ux_mode: 'popup',
-
-  onSuccess: (codeResponse) => {
-    if (!codeResponse.code) {
-      toast.error('Google did not return an authorization code');
-      return;
-    }
-
-    dispatch(googleLogin(codeResponse.code));
-  },
-
-  onError: () => {
-    toast.error('Google authentication was cancelled or failed');
-  },
-});
 
   const submitHandler = (event) => {
     event.preventDefault();
@@ -86,48 +60,6 @@ const LoginScreen = () => {
         <Button type='submit' variant='primary'>
           Sign In
         </Button>
-        <div
-  style={{
-    display: 'flex',
-    alignItems: 'center',
-    margin: '20px 0',
-  }}
->
-  <div
-    style={{
-      flex: 1,
-      height: '1px',
-      backgroundColor: '#ddd',
-    }}
-  />
-
-  <span
-    style={{
-      padding: '0 12px',
-      color: '#777',
-    }}
-  >
-    OR
-  </span>
-
-  <div
-    style={{
-      flex: 1,
-      height: '1px',
-      backgroundColor: '#ddd',
-    }}
-  />
-</div>
-
-<Button
-  type='button'
-  variant='outline-danger'
-  style={{ width: '100%' }}
-  disabled={loading}
-  onClick={() => signInWithGoogle()}
->
-  Continue with Google
-</Button>
       </Form>
 
       <Row className='py-3'>

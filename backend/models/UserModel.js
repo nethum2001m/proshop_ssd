@@ -12,25 +12,14 @@ const userSchema = mongoose.Schema(
       required: true,
       unique: true,
     },
-    googleSub: {
-      type: String,
-      unique: true,
-      sparse: true,
-    },
     password: {
       type: String,
-      required: function () {
-        return !this.googleSub;
-      },
+      required: true,
     },
     isAdmin: {
       type: Boolean,
       required: true,
       default: false,
-    },
-    tokenVersion: {
-      type: Number,
-      default: 0,
     },
   },
   {
@@ -39,25 +28,15 @@ const userSchema = mongoose.Schema(
 );
 
 userSchema.methods.matchPassword = async function (enteredPassword) {
-  if (!this.password) {
-    return false;
-  }
-
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-
-
-
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password') || !this.password) {
-    return next();
+  if (!this.isModified('password')) {
+    next();
   }
-
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
-
-  next();
 });
 
 const User = mongoose.model('User', userSchema);
